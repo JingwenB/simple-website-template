@@ -1,79 +1,349 @@
-<!doctype html>
+<!DOCTYPE html>
+<meta charset="utf-8">
 <html>
-  <head>
-    <!-- Page setup -->
-    <meta charset="utf-8">
-    <title>Your title here</title>
-    <meta name="description" content="A brief description of your site for search engines">
-    <meta name="author" content="Information about the author here">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-    <link rel="icon" type="image/png" href="favicon.png">
-  
-    <!-- Stylesheets -->
-    <!-- Reset default styles and add support for google fonts -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" rel="stylesheet" type="text/css" />
-    <link href="http://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css" />
-   
-    <!-- Custom styles -->
-    <link href="style.css" rel="stylesheet" type="text/css" />
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<link rel="stylesheet" href="styles/mapStyle.css">
 
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>    
+<style>
+    body,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        font-family: "Raleway", sans-serif
+    }
+</style>
 
-    <!-- Want to add Bootstrap? -->
-    <!-- Visit: https://getbootstrap.com/docs/4.3/getting-started/introduction/ -->
-    
-  </head>
-  
-  <body>
+<header>
+    <h1><b>Crime Events Spatial Visualization</b></h1>
+    <p>Welcome to the interactive spatial part of edav final project</p>
+</header>
 
-    <header id="header">
-      <img src="logo.jpg">
-      <h1>Simple Website</h1>
-      
-      <!-- Menu link fragment #id should match a div id. Example: <a href="#home"> links to <div id="home"></div>  -->
-      <ul class="main-menu">
-        <li><a href="#home">home</a></li>
-        <li><a href="#about">about</a></li>
-        <li><a href="#contact">contact</a></li>
-      </ul>                 
-    </header>
-   
-    <div id="container">
-      <div class="inner">
-        <div id="content"> 
-          
-          <div id="home" class="content-region hide">
-            <h2>Home</h2>
-            <p>
-              This is a simple website template published with Github Pages. <a href="https://github.com/cpl-makerlab/simple-website-template">Fork this repository</a> to create your own site!
-            </p>
-          </div>
-          
-          <div id="about" class="content-region hide">
-            <h2>About</h2>
-            <p>
-              Sed tempus urna et pharetra pharetra massa massa ultricies. Porttitor rhoncus dolor purus non enim praesent. Id aliquet risus feugiat in ante metus dictum. 
-            </p>
-          </div>
-          
-          <div id="contact" class="content-region hide">
-            <h2>Contact</h2>
-            <p>
-              Pellentesque nec nam aliquam sem et tortor consequat. Quisque sagittis purus sit amet volutpat consequat. Magna eget est lorem ipsum dolor. 
-            </p>
-          </div>
-          
-        </div>
-      </div>
+
+<!-- Create an element where the map will take place -->
+<div id='map'>
+
+    <label>Select a year </label>
+    <select id="year"></select>
+    <label>to preview the total number of crime events happend</label>
+    <div>
+        <svg id="my_dataviz" width="800" height="500"></svg>
     </div>
+    <p>Click the precinct region to zoom in, double click to zoom out</p>
 
-    <footer>  
-      Footer region
-    </footer>
-    
-    <!-- Load additional JS scripts here -->
-    <script type="text/javascript" src="script.js"></script>
-    
-  </body>
+    <p>Hover mouse over different precincts to preivew precinct code and crime events number corresponding to the selected precinct:</p>
+</div>
+<div id='conslusion' style='width: 800px'>
+    <h4><b>Insights:</b></h4>
+    <text class='insights'>
+We notice that some precincts are more likely to have crime events no matter which year is selected, such as precinct #44, #14, #75 #40. 
+<br>In the early 10s, we see that crime events are mostly concentrated in precincts #75, #14, and #44. However, we also see that more regions have darker colors in the late 10s, especially in 2020. 2020 has the most number of deep blue color regions than other years, where precinct #75 does not have the deepest color. Since, whenever we select a year we rescale the color domain, the deeper that color is the crime events are more frequent. 
+<br>Therefore, this shows that crimes are no longer concentrated in specific regions, which has been more dispersed in various regions over these 10 years.
+</text>
+</div>
+
+<script>
+    // overall data
+    var overall = {
+            "14": 179971,
+            "75": 176046,
+            "44": 165166,
+            "40": 151858,
+            "73": 141278,
+            "46": 128498,
+            "43": 126364,
+            "52": 121176,
+            "25": 115660,
+            "103": 107070,
+            "113": 100044,
+            "115": 96412,
+            "79": 93609,
+            "120": 92843,
+            "47": 92565,
+            "41": 91581,
+            "67": 91267,
+            "48": 90399,
+            "42": 86669,
+            "114": 81897,
+            "83": 81256,
+            "32": 79739,
+            "77": 79695,
+            "110": 78834,
+            "5": 77949,
+            "23": 76108,
+            "34": 73243,
+            "18": 71902,
+            "70": 71643,
+            "28": 71381,
+            "33": 70995,
+            "109": 68303,
+            "71": 67333,
+            "13": 67019,
+            "60": 65417,
+            "81": 63603,
+            "1": 62532,
+            "84": 62227,
+            "105": 61285,
+            "102": 58483,
+            "6": 56461,
+            "30": 55743,
+            "104": 55178,
+            "90": 54161,
+            "9": 54005,
+            "72": 53442,
+            "49": 51129,
+            "106": 50653,
+            "101": 48353,
+            "7": 46657,
+            "19": 44955,
+            "122": 43961,
+            "61": 43651,
+            "10": 43448,
+            "107": 43429,
+            "45": 42811,
+            "69": 40934,
+            "24": 40089,
+            "26": 39808,
+            "108": 37619,
+            "88": 37213,
+            "62": 36319,
+            "68": 33896,
+            "112": 33118,
+            "63": 32936,
+            "50": 30688,
+            "76": 29891,
+            "20": 29680,
+            "100": 27437,
+            "78": 27258,
+            "17": 26192,
+            "66": 25864,
+            "121": 24639,
+            "111": 23171,
+            "94": 22530,
+            "123": 20145,
+            "22": 6584,
+            "27": 1
+        }
+        // Define color scale
+    var color = d3.scaleLinear()
+        .domain([1, 20])
+        .clamp(true)
+        .range(['#fff', '#409A99']);
+
+    // The svg
+    var svg = d3.select("svg"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
+
+    var centered;
+
+    // add background
+    svg.append('rect')
+        .attr('class', 'background')
+        .attr('width', width)
+        .attr('height', height)
+
+    // .on('click', clicked);
+
+    // add layer
+    var g = svg.append('g');
+
+    var effectLayer = g.append('g')
+        .classed('effect-layer', true);
+
+    var mapLayer = g.append('g')
+        .classed('map-layer', true)
+
+
+    // ///////////////////////////////////////////////////////////
+
+
+    // Map and projection
+
+    var projection = d3.geoMercator()
+        .center([-74.00, 40.71]) // GPS of location to zoom on
+        .scale(50000) // This is like the zoom
+        .translate([width / 2, height / 2])
+    var path = d3.geoPath()
+        .projection(projection);
+
+
+
+
+    // Load internal data and boot
+    //https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson
+    // http://data.beta.nyc//dataset/0ff93d2d-90ba-457c-9f7e-39e47bf2ac5f/resource/35dd04fb-81b3-479b-a074-a27a37888ce7/download/d085e2f8d0b54d4590b1e7d1f35594c1pediacitiesnycneighborhoods.geojson
+    var features;
+    d3.json('/dataMap/Police_Precincts.geojson', function(error, mapData) {
+        features = mapData.features;
+        console.log(features)
+            // Update color scale domain based on data
+        color.domain([0, d3.max(features, nameLength)]);
+
+        // Draw each province as a path
+        mapLayer.selectAll('path')
+            .data(features)
+            .enter().append('path')
+            .attr('d', path)
+            .attr('vector-effect', 'non-scaling-stroke')
+            .style('fill', fillFn)
+            .on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave)
+            .on('click', clicked);
+    });
+
+    var dataLookup;
+    d3.json('/dataMap/crimes.json', function(error, data) {
+        dataLookup = data;
+    });
+
+    // Get province name
+    function nameFn(d) {
+        // console.log(d.properties .precinct)
+        return d && d.properties ? d.properties.precinct : null;
+    }
+
+    var numberCrime2021 = []
+        // Get province name length
+    function nameLength(d) {
+        var n = nameFn(d);
+        // console.log(total_2018[n.toString()])
+        return data[n.toString()];
+    }
+
+    // Get province color
+    function fillFn(d) {
+        return color(nameLength(d));
+    }
+    // *************************** functional data ***************************
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var Tooltip = d3.select("#map")
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        // .style("right", '600px')
+
+
+
+    var mouseover = function(d) {
+        Tooltip
+            .style("opacity", 1)
+        d3.select(this)
+            .style("stroke", "black")
+            .style("opacity", 1)
+    }
+    var mousemove = function(d) {
+        //   console.log(d)
+        Tooltip
+            .html("precinct number : " + d.properties.precinct + '</br>' +
+                "crime events happened : " + data[d.properties.precinct])
+            .style("left", (d3.mouse(this)[0] + 70) + "px")
+            .style("top", (d3.mouse(this)[1]) + "px")
+    }
+    var mouseleave = function(d) {
+        Tooltip
+            .style("opacity", 1)
+        d3.select(this)
+            .style("stroke", "none")
+            .style("opacity", 0.8)
+    }
+
+    // When clicked, zoom in , double click to zoom out
+
+    function clicked(d) {
+        var x, y, k;
+        // Compute centroid of the selected path
+        if (d && centered !== d) {
+            var centroid = path.centroid(d);
+            x = centroid[0];
+            y = centroid[1];
+            k = 4;
+            centered = d;
+        } else {
+            x = width / 2;
+            y = height / 2;
+            k = 1;
+            centered = null;
+        }
+
+        // Highlight the clicked province
+        mapLayer.selectAll('path')
+            .style('fill', function(d) {
+                return centered && d === centered ? '#D5708B' : fillFn(d);
+            });
+        // Zoom
+        g.transition()
+            .duration(750)
+            .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
+
+        Tooltip
+            .style("opacity", 1)
+        d3.select(this)
+            .style("stroke", "black")
+            .style("opacity", 1)
+    }
+
+    //***************** ***************** dropdown selection  ***************** *****************
+
+    d3.select("select#year")
+        .selectAll('myOptions')
+        .data(["all years", 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020])
+        .enter()
+        .append('option')
+        .text((d) => d.toString()) // text showed in the menu
+        .attr("value", (d) => d.toString()) // corresponding value returned by the button
+
+    var data = overall
+    d3.select("select#year").on("change", (d) => {
+        var selected = d3.select("select#year").property("value");
+
+        update(selected);
+
+    })
+
+    function update(selected) {
+        // var dataLookup = {
+        //     '2018': total_2018,
+        //     '2019': total_2019,
+        //     '2020': total_2020,
+        //     'all years': overall,
+
+        // }
+        data = dataLookup[selected];
+
+        // update color 
+        color.domain([0, d3.max(features, nameLength)]);
+
+        mapLayer.selectAll('path')
+            .style('fill', fillFn)
+
+        color.domain([0, d3.max(features, nameLength)]);
+
+        // Get province name
+        function nameFn(d) {
+            // console.log(d.properties .precinct)
+            return d && d.properties ? d.properties.precinct : null;
+        }
+
+        var numberCrime2021 = []
+            // Get province name length
+        function nameLength(d) {
+            var n = nameFn(d);
+            // console.log(total_2018[n.toString()])
+            return data[n.toString()];
+        }
+
+        // Get province color
+        function fillFn(d) {
+            return color(nameLength(d));
+        }
+
+    }
+</script>
+
 </html>
